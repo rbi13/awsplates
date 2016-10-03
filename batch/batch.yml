@@ -1,0 +1,42 @@
+Description: "
+  Batch file processing scheduler for aws ecs.
+"
+
+#Parameters
+
+Resources:
+  cluster:
+    Type: "AWS::ECS::Cluster"
+  jobQueue:
+    Type: "AWS::SQS::Queue"
+    Properties:
+      # delete jobs not processed within 8 hours
+      MessageRetentionPeriod: 19200
+      # allow job loading 20 seconds before container shutdown
+      ReceiveMessageWaitTimeSeconds: 20
+      # allow 10 mins before job marked for reprocessing
+      VisibilityTimeout: 600
+  jobLoader:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      # code can be built/packaged via gradle script
+      Code:
+        S3Bucket: "lambdas"
+        S3Key: "BatchJobLoader.jar"
+      Description: "
+        loads jobs uploaded to the job bucket into the job queue 
+        and starts necessary processing containers according to queueSize.
+      "
+      Handler: String
+      Role: String
+      Runtime: java8
+      Timeout: 60
+  JobBucket:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      AccessControl: AwsExecRead
+      # calls job loader work upload to this bucket
+      NotificationConfiguration:
+        LambdaConfiguration:
+          Event: "s3:ObjectCreated:*"
+          Function: !Ref jobLoader
