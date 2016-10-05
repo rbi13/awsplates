@@ -16,13 +16,3 @@ dependencies{
     compile 'com.amazonaws:aws-lambda-java-core:+'
     compile 'com.amazonaws:aws-lambda-java-events:+'
 }
-
-//task buildZip(type: Zip){
-//    from compileJava
-//    from processResources
-//    into('lib') {
-//        from configurations.runtime
-//    }
-//}
-//
-//build.dependsOn buildZip

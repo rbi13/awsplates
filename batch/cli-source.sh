@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
 
 ### Params
-codeBucket='bns.ds.code'
-fileBucket='bns.ds.fileprocessing'
+codeBucket='bnsdscode'
+fileBucket='bnsdsfileprocessing'
 fileNotif='notification.json'
 stackFile='batch.yml'
+
+lambdaProjectDir='lambda'
+lambdaBuildDir='build/libs'
+lambdaArchiveName='S3FileScheduler-0.0.1-all.jar'
+lambdaName='jobScheduler'
 
 ### Compute Stack (cloud formation)
 create-compute-stack() {
@@ -17,18 +22,38 @@ delete-compute-stack() {
 		--stack-name $1
 }
 
+### lambda functions
+lm-create(){
+     aws lambda create-function \
+        --function-name ${lambdaName} \
+        --runtime  'java8' \
+        --role  'arn:aws:iam::448132366281:role/lambda-exec' \
+        --handler 'io.rbi.aws.lambda.scheduling.S3FileScheduler' \
+        --code "S3Bucket=${codeBucket}, S3Key=${lambdaArchiveName}"
+
+    aws lambda add-permission \
+        --function-name ${lambdaName} \
+        --statement-id "jobScheduler" \
+        --action "lambda:InvokeFunction" \
+        --principal s3.amazonaws.com
+}
+
+lm-update-code(){
+    cd ${lambdaProjectDir}
+    gradle shadowJar
+    s3-lambda-upload "${lambdaBuildDir}/${lambdaArchiveName}"
+     aws lambda update-function-code \
+        --function-name ${lambdaName} \
+        --s3-bucket ${codeBucket} \
+        --s3-key ${lambdaArchiveName}
+}
+
 ### Bucket Functions
 s3-create() {
 	aws s3 mb "s3://${codeBucket}" 
 	aws s3 mb "s3://${fileBucket}" 
 }
 s3-configure() {
-    aws lambda add-permission \
-        --function-name test2-jobScheduler-1F5WATPRINQ6Z \
-        --statement-id "jobScheduler" \
-        --action "lambda:InvokeFunction" \
-        --principal s3.amazonaws.com
-
     # TODO: arn currently hardcoded in json config
     aws s3api put-bucket-notification-configuration \
         --bucket ${fileBucket} \

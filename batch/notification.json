@@ -2,7 +2,7 @@
     "LambdaFunctionConfigurations": [
         {
             "Id": "scheduler",
-            "LambdaFunctionArn": "arn:aws:lambda:us-west-2:448132366281:function:test2-jobScheduler-1F5WATPRINQ6Z",
+            "LambdaFunctionArn": "arn:aws:lambda:us-west-2:448132366281:function:jobScheduler",
             "Events": ["s3:ObjectCreated:*"]
         }
     ]
