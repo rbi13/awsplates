@@ -1,0 +1,28 @@
+plugins{
+    id 'java'
+    id "com.github.johnrengelman.shadow" version "1.2.3"
+}
+
+group 'io.rbi.aws.lambda'
+version '0.0.1'
+
+sourceCompatibility = 1.8
+
+repositories{
+    mavenCentral()
+}
+
+dependencies{
+    compile 'com.amazonaws:aws-lambda-java-core:+'
+    compile 'com.amazonaws:aws-lambda-java-events:+'
+}
+
+//task buildZip(type: Zip){
+//    from compileJava
+//    from processResources
+//    into('lib') {
+//        from configurations.runtime
+//    }
+//}
+//
+//build.dependsOn buildZip

@@ -1,0 +1,6 @@
+# teli
+.idea/
+
+# gradle
+.gradle/
+build/

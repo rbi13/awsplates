@@ -1,0 +1,11 @@
+
+#  created via cli due to bucket name retention
+#  JobBucket:
+#    Type: "AWS::S3::Bucket"
+#    Properties:
+#      AccessControl: AwsExecRead
+#      # calls job loader work upload to this bucket
+#      NotificationConfiguration:
+#        LambdaConfiguration:
+#          Event: "s3:ObjectCreated:*"
+#          Function: !Ref jobLoader

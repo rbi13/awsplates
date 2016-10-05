@@ -1,12 +1,10 @@
 Description: "
-  Batch file processing scheduler for aws ecs.
+  file processing scheduler for aws ecs.
 "
 
 #Parameters
 
 Resources:
-  cluster:
-    Type: "AWS::ECS::Cluster"
   jobQueue:
     Type: "AWS::SQS::Queue"
     Properties:
@@ -16,27 +14,24 @@ Resources:
       ReceiveMessageWaitTimeSeconds: 20
       # allow 10 mins before job marked for reprocessing
       VisibilityTimeout: 600
-  jobLoader:
+  jobScheduler:
     Type: "AWS::Lambda::Function"
     Properties:
-      # code can be built/packaged via gradle script
+      # code built/packaged via gradle script
       Code:
-        S3Bucket: "lambdas"
-        S3Key: "BatchJobLoader.jar"
+        # TODO: make code bucket a param
+        S3Bucket: "bns.ds.code"
+        # TODO: make key a param
+        S3Key: "lambda-0.0.1-all.jar"
       Description: "
         loads jobs uploaded to the job bucket into the job queue 
         and starts necessary processing containers according to queueSize.
       "
-      Handler: String
-      Role: String
+      Handler: "io.rbi.aws.lambda.scheduling.S3FileScheduler"
+      # TODO: make role name a param
+      Role: "arn:aws:iam::448132366281:role/lambda-exec"
       Runtime: java8
       Timeout: 60
-  JobBucket:
-    Type: "AWS::S3::Bucket"
-    Properties:
-      AccessControl: AwsExecRead
-      # calls job loader work upload to this bucket
-      NotificationConfiguration:
-        LambdaConfiguration:
-          Event: "s3:ObjectCreated:*"
-          Function: !Ref jobLoader
+  # not there just yet
+  #cluster:
+  # Type: "AWS::ECS::Cluster"
