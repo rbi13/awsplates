@@ -1,0 +1,26 @@
+{
+  "family": "kaldi",
+  "containerDefinitions": [
+    {
+      "name": "kaldi",
+      "image": "448132366281.dkr.ecr.us-west-2.amazonaws.com/bns/ds",
+      "cpu": 99,
+      "memory": 512,
+      "essential": true,
+      "environment": [
+        {
+          "name": "AWS_REGION",
+          "value": "us-west-2"
+        },
+        {
+          "name": "SQS_QUEUE_URL",
+          "value": "https://us-west-2.queue.amazonaws.com/448132366281/jobQueue"
+        },
+        {
+          "name": "ECS_AVAILABLE_LOGGING_DRIVERS",
+          "value":"['json-file','awslogs']"
+        }
+      ]
+    }
+  ]
+}

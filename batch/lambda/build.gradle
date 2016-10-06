@@ -15,6 +15,7 @@ repositories{
 dependencies{
     compile 'com.amazonaws:aws-lambda-java-core:+'
     compile 'com.amazonaws:aws-lambda-java-events:+'
+    compile 'com.amazonaws:aws-java-sdk-ecs:+'
 }
 
 

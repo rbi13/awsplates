@@ -3,6 +3,7 @@
 ### Params
 codeBucket='bnsdscode'
 fileBucket='bnsdsfileprocessing'
+resultBucket='bnsdsresults'
 fileNotif='notification.json'
 queueName='jobQueue'
 queueUrl='https://us-west-2.queue.amazonaws.com/448132366281/jobQueue'
@@ -10,6 +11,8 @@ lambdaProjectDir='lambda'
 lambdaBuildDir='build/distributions'
 lambdaArchiveName='S3FileScheduler-0.0.1.zip'
 lambdaName='jobScheduler'
+taskDef='processorTask.json'
+role='arn:aws:iam::448132366281:role/lambda-exec'
 
 stackFile='batch.yml'
 
@@ -29,7 +32,7 @@ lm-create(){
      aws lambda create-function \
         --function-name ${lambdaName} \
         --runtime  'java8' \
-        --role  'arn:aws:iam::448132366281:role/lambda-exec' \
+        --role  ${role} \
         --handler 'io.rbi.aws.lambda.scheduling.S3FileScheduler' \
         --code "S3Bucket=${codeBucket}, S3Key=${lambdaArchiveName}"
 
@@ -58,21 +61,29 @@ lm-update-config(){
     --timeout 20
 }
 
+ec-register-task(){
+    aws ecs register-task-definition \
+        --cli-input-json "file://${taskDef}"
+}
 sq-create(){
     aws sqs create-queue --queue-name ${queueName}
 }
-
 sq-receive(){
     aws sqs receive-message \
         --queue-url ${queueUrl} \
         --wait-time-seconds 3 \
         --query Messages[0].[Body,ReceiptHandle]
 }
+sq-clear(){
+    aws sqs purge-queue \
+        --queue-url ${queueUrl}
+}
 
 ### Bucket Functions
 s3-create(){
-	aws s3 mb "s3://${codeBucket}" 
-	aws s3 mb "s3://${fileBucket}" 
+	aws s3 mb "s3://${codeBucket}"
+	aws s3 mb "s3://${fileBucket}"
+	aws s3 mb "s3://${resultBucket}"
 }
 s3-configure(){
     # TODO: arn currently hardcoded in json config
@@ -86,6 +97,8 @@ s3-upload(){ aws s3 cp "$1" "s3://${fileBucket}/uploads/solo/$(basename $1)" ;}
 s3-dir-upload(){ aws s3 sync . "s3://${fileBucket}/uploads/$(date +%s%3N)" ;}
 # clear upload section
 s3-clr-uploads(){ aws s3 rm --recursive "s3://${fileBucket}/uploads" ;}
+s3-clr-results(){ aws s3 rm --recursive "s3://${resultBucket}" ;}
+s3-clr-all(){ s3-clr-uploads; s3-clr-results ;}
 # code upload
 s3-lambda-upload(){ aws s3 cp "$1" "s3://${codeBucket}/$(basename $1)" ;}
 

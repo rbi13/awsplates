@@ -1,16 +1,18 @@
 package io.rbi.aws.lambda.scheduling;
 
+import com.amazonaws.services.ecs.AmazonECSClientBuilder;
+import com.amazonaws.services.ecs.model.RunTaskRequest;
+import com.amazonaws.services.ecs.model.RunTaskResult;
+import com.amazonaws.services.ecs.model.StartTaskRequest;
+import com.amazonaws.services.ecs.model.StartTaskResult;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.S3Event;
-import static com.amazonaws.services.s3.event.S3EventNotification.S3EventNotificationRecord;
-import static java.net.URLDecoder.decode;
 
 import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.amazonaws.services.sqs.model.SendMessageRequest;
 
 import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
 
 /**
  * Lambda function triggered by the creation of objects in S3
@@ -24,13 +26,21 @@ import java.net.URLDecoder;
 public class S3FileScheduler implements
         RequestHandler<S3Event, String> {
 
+    // TODO: move to proper config
     // config
     static String QUEUE_URL="https://us-west-2.queue.amazonaws.com/448132366281/jobQueue";
+    // TODO: switch to <family:revision> probably easier
+    static String TASK_DEFINITION="arn:aws:ecs:us-west-2:448132366281:task-definition/kaldi:4";
+    // TODO: switch to <family:revision> probably easier
+    static String CLUSTER="kaldi-cluster";
+    // TODO: switch to <family:revision> probably easier
+    static String CLUSTER_INSTANCE="i-0612118517e768b04";
 
     @Override
     public String handleRequest(S3Event event, Context context) {
         try {
             publishJob(event);
+            startProcessor();
         } catch (UnsupportedEncodingException e) {
             return e.getMessage();
         }
@@ -45,23 +55,20 @@ public class S3FileScheduler implements
         new AmazonSQSClient().sendMessage(
             new SendMessageRequest()
                 .withQueueUrl(QUEUE_URL)
-                .withMessageBody( toMsg(event) )
+                .withMessageBody( event.toJson() )
         );
     }
 
     /**
-     * Turns S3 event to job message used by processing container.
-     * @param event - S3 creation event
-     * @return message containing bucket and key for pending job
-     * @throws UnsupportedEncodingException -
-     * Object key may have spaces or unicode non-ASCII characters.
-     * see {@link URLDecoder#decode(String, String)}
+     * start processor for queue processing
      */
-    static String toMsg(S3Event event) throws UnsupportedEncodingException {
-        S3EventNotificationRecord record = event.getRecords().get(0);
-        return String.join("\n",
-            record.getS3().getBucket().getName(),
-            decode(record.getS3().getObject().getKey().replace('+', ' '), "UTF-8")
-        );
+    static void startProcessor(){
+        RunTaskResult res = AmazonECSClientBuilder.defaultClient()
+                .runTask(
+                    new RunTaskRequest()
+                        .withTaskDefinition(TASK_DEFINITION)
+                );
+        res.getFailures().stream().forEach(f -> System.out.println(f));
+        System.out.println(res.getTasks());
     }
 }
